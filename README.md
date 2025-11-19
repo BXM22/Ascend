@@ -1,6 +1,6 @@
-# Workout Tracker - SwiftUI iOS App
+# Ascend - SwiftUI iOS App
 
-A native iOS workout tracking app built with SwiftUI, featuring the same beautiful design and functionality as the HTML version.
+
 
 ## Features
 
