@@ -34,11 +34,43 @@ class WorkoutViewModel: ObservableObject {
     
     func startWorkoutFromTemplate(_ template: WorkoutTemplate) {
         let exercises = template.exercises.map { exerciseName in
-            Exercise(name: exerciseName, targetSets: 4, exerciseType: .weightReps)
+            let alternatives = ExerciseDataManager.shared.getAlternatives(for: exerciseName)
+            let videoURL = ExerciseDataManager.shared.getVideoURL(for: exerciseName)
+            
+            // Check if this is a calisthenics skill progression exercise
+            let (exerciseType, holdDuration) = determineExerciseType(for: exerciseName)
+            
+            return Exercise(
+                name: exerciseName,
+                targetSets: 3,
+                exerciseType: exerciseType,
+                holdDuration: holdDuration,
+                alternatives: alternatives,
+                videoURL: videoURL
+            )
         }
         currentWorkout = Workout(name: template.name, exercises: exercises)
         currentExerciseIndex = 0
         startTimer()
+    }
+    
+    private func determineExerciseType(for exerciseName: String) -> (ExerciseType, Int?) {
+        // Check if this is a calisthenics skill progression
+        for skill in CalisthenicsSkillManager.shared.skills {
+            if exerciseName.contains(skill.name) {
+                // Find the matching level
+                if let level = skill.progressionLevels.first(where: { exerciseName.contains($0.name) }) {
+                    if let holdDuration = level.targetHoldDuration {
+                        return (.hold, holdDuration)
+                    } else {
+                        return (.weightReps, nil)
+                    }
+                }
+            }
+        }
+        
+        // Default to weight/reps for regular exercises
+        return (.weightReps, nil)
     }
     
     func startWorkout(name: String) {
@@ -47,7 +79,7 @@ class WorkoutViewModel: ObservableObject {
         startTimer()
     }
     
-    private func startTimer() {
+    func startTimer() {
         workoutStartTime = Date()
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             guard let self = self, let startTime = self.workoutStartTime else { return }
@@ -136,15 +168,59 @@ class WorkoutViewModel: ObservableObject {
     func addExercise(name: String, targetSets: Int, type: ExerciseType, holdDuration: Int?) {
         guard var workout = currentWorkout else {
             // Create new workout if none exists
-            let exercise = Exercise(name: name, targetSets: targetSets, exerciseType: type, holdDuration: holdDuration)
+            let alternatives = ExerciseDataManager.shared.getAlternatives(for: name)
+            let videoURL = ExerciseDataManager.shared.getVideoURL(for: name)
+            let exercise = Exercise(
+                name: name,
+                targetSets: targetSets,
+                exerciseType: type,
+                holdDuration: holdDuration,
+                alternatives: alternatives,
+                videoURL: videoURL
+            )
             currentWorkout = Workout(name: "Workout", exercises: [exercise])
             currentExerciseIndex = 0
             startTimer()
             return
         }
         
-        let exercise = Exercise(name: name, targetSets: targetSets, exerciseType: type, holdDuration: holdDuration)
+        let alternatives = ExerciseDataManager.shared.getAlternatives(for: name)
+        let videoURL = ExerciseDataManager.shared.getVideoURL(for: name)
+        let exercise = Exercise(
+            name: name,
+            targetSets: targetSets,
+            exerciseType: type,
+            holdDuration: holdDuration,
+            alternatives: alternatives,
+            videoURL: videoURL
+        )
         workout.exercises.append(exercise)
+        currentWorkout = workout
+    }
+    
+    func switchToAlternative(alternativeName: String) {
+        guard var workout = currentWorkout,
+              currentExerciseIndex < workout.exercises.count else { return }
+        
+        // Get alternatives for the alternative exercise (recursive)
+        let alternatives = ExerciseDataManager.shared.getAlternatives(for: alternativeName)
+        let videoURL = ExerciseDataManager.shared.getVideoURL(for: alternativeName)
+        
+        // Replace current exercise with alternative
+        var alternativeExercise = Exercise(
+            name: alternativeName,
+            targetSets: workout.exercises[currentExerciseIndex].targetSets,
+            exerciseType: workout.exercises[currentExerciseIndex].exerciseType,
+            holdDuration: workout.exercises[currentExerciseIndex].targetHoldDuration,
+            alternatives: alternatives,
+            videoURL: videoURL
+        )
+        
+        // Preserve sets if any
+        alternativeExercise.sets = workout.exercises[currentExerciseIndex].sets
+        alternativeExercise.currentSet = workout.exercises[currentExerciseIndex].currentSet
+        
+        workout.exercises[currentExerciseIndex] = alternativeExercise
         currentWorkout = workout
     }
     

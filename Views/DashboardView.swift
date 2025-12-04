@@ -61,15 +61,12 @@ struct DashboardHeader: View {
             
             Spacer()
             
-            // Profile icon placeholder
-            Circle()
-                .fill(LinearGradient.primaryGradient)
+            // App Logo
+            Image("Logo")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
                 .frame(width: 48, height: 48)
-                .overlay(
-                    Image(systemName: "person.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(AppColors.accentForeground)
-                )
+                .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .padding(.horizontal, AppSpacing.lg)
         .padding(.vertical, AppSpacing.md)

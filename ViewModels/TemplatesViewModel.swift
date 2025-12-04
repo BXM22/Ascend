@@ -27,6 +27,23 @@ class TemplatesViewModel: ObservableObject {
                 estimatedDuration: 70
             )
         ]
+        
+        // Add calisthenics skill progression templates
+        loadCalisthenicsTemplates()
+    }
+    
+    func loadCalisthenicsTemplates() {
+        let calisthenicsTemplates = CalisthenicsSkillManager.shared.skills.map { skill in
+            // Create template with all progression levels as exercises
+            let exerciseNames = skill.progressionLevels.map { "\(skill.name) - \($0.name)" }
+            return WorkoutTemplate(
+                name: "\(skill.name) Progression",
+                exercises: exerciseNames,
+                estimatedDuration: 45
+            )
+        }
+        
+        templates.append(contentsOf: calisthenicsTemplates)
     }
     
     @Published var showEditTemplate: Bool = false

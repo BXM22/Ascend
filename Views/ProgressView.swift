@@ -34,13 +34,7 @@ struct ProgressView: View {
                     ExercisePRTrackerView(viewModel: viewModel)
                         .padding(.horizontal, 20)
                     
-                    // Stats Grid
-                    StatsGridView(
-                        totalVolume: viewModel.totalVolume,
-                        workoutCount: viewModel.workoutCount
-                    )
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 100)
+                   
                 }
             }
         }
@@ -453,17 +447,7 @@ struct PRItemView: View {
     }
 }
 
-struct StatsGridView: View {
-    let totalVolume: Int
-    let workoutCount: Int
-    
-    var body: some View {
-        HStack(spacing: 16) {
-            StatCard(value: "\(totalVolume)", label: "Total Volume (lbs)")
-            StatCard(value: "\(workoutCount)", label: "Workouts This Month")
-        }
-    }
-}
+
 
 struct StatCard: View {
     let value: String

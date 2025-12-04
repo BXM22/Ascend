@@ -2,7 +2,7 @@ import Foundation
 import SwiftUI
 
 // MARK: - Exercise Set
-struct ExerciseSet: Identifiable {
+struct ExerciseSet: Identifiable, Equatable {
     let id = UUID()
     let setNumber: Int
     let weight: Double
@@ -15,6 +15,10 @@ struct ExerciseSet: Identifiable {
         self.reps = reps
         self.holdDuration = holdDuration
     }
+    
+    static func == (lhs: ExerciseSet, rhs: ExerciseSet) -> Bool {
+        return lhs.id == rhs.id
+    }
 }
 
 // MARK: - Exercise Type
@@ -24,7 +28,7 @@ enum ExerciseType {
 }
 
 // MARK: - Exercise
-struct Exercise: Identifiable {
+struct Exercise: Identifiable, Equatable {
     let id = UUID()
     let name: String
     var sets: [ExerciseSet]
@@ -32,19 +36,27 @@ struct Exercise: Identifiable {
     let targetSets: Int
     let exerciseType: ExerciseType
     let targetHoldDuration: Int?
+    let alternatives: [String]
+    let videoURL: String?
     
     // Convenience property for type
     var type: ExerciseType {
         exerciseType
     }
     
-    init(name: String, targetSets: Int, exerciseType: ExerciseType, holdDuration: Int? = nil) {
+    init(name: String, targetSets: Int, exerciseType: ExerciseType, holdDuration: Int? = nil, alternatives: [String] = [], videoURL: String? = nil) {
         self.name = name
         self.sets = []
         self.currentSet = 1
         self.targetSets = targetSets
         self.exerciseType = exerciseType
         self.targetHoldDuration = holdDuration
+        self.alternatives = alternatives
+        self.videoURL = videoURL
+    }
+    
+    static func == (lhs: Exercise, rhs: Exercise) -> Bool {
+        return lhs.id == rhs.id
     }
 }
 
@@ -64,7 +76,7 @@ struct WorkoutTemplate: Identifiable {
 }
 
 // MARK: - Workout
-struct Workout: Identifiable {
+struct Workout: Identifiable, Equatable {
     let id: UUID
     let name: String
     var exercises: [Exercise]
@@ -75,6 +87,10 @@ struct Workout: Identifiable {
         self.name = name
         self.exercises = exercises
         self.startDate = Date()
+    }
+    
+    static func == (lhs: Workout, rhs: Workout) -> Bool {
+        return lhs.id == rhs.id
     }
 }
 

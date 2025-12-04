@@ -64,8 +64,25 @@ struct WorkoutView: View {
                                    let repsValue = Int(reps) {
                                     viewModel.completeSet(weight: weightValue, reps: repsValue)
                                 }
+                            },
+                            onSelectAlternative: { alternativeName in
+                                viewModel.switchToAlternative(alternativeName: alternativeName)
                             }
                         )
+                        
+                        // Alternative Exercises Section
+                        let alternatives = ExerciseDataManager.shared.getAlternatives(for: exercise.name)
+                        if !alternatives.isEmpty {
+                            AlternativeExercisesView(
+                                exerciseName: exercise.name,
+                                alternatives: alternatives,
+                                onSelectAlternative: { alternativeName in
+                                    viewModel.switchToAlternative(alternativeName: alternativeName)
+                                }
+                            )
+                            .padding(.horizontal, AppSpacing.lg)
+                            .padding(.top, AppSpacing.md)
+                        }
                     }
                 }
                 
@@ -204,6 +221,18 @@ struct ExerciseCard: View {
     let showPRBadge: Bool
     let prMessage: String
     let onCompleteSet: () -> Void
+    let onSelectAlternative: ((String) -> Void)?
+    
+    private var alternatives: [String] {
+        if !exercise.alternatives.isEmpty {
+            return exercise.alternatives
+        }
+        return ExerciseDataManager.shared.getAlternatives(for: exercise.name)
+    }
+    
+    private var videoURL: String? {
+        exercise.videoURL ?? ExerciseDataManager.shared.getVideoURL(for: exercise.name)
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -253,6 +282,11 @@ struct ExerciseCard: View {
                     unit: "reps",
                     keyboardType: .numberPad
                 )
+                
+                // Video Tutorial Button
+                if videoURL != nil {
+                    VideoTutorialButton(videoURL: videoURL, exerciseName: exercise.name)
+                }
                 
                 // Complete Set Button
                 Button(action: onCompleteSet) {

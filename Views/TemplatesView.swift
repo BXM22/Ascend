@@ -20,23 +20,39 @@ struct TemplatesView: View {
                     viewModel.createTemplate()
                 })
                 
-                VStack(spacing: 20) {
-                    ForEach(viewModel.templates) { template in
-                        TemplateCard(
-                            template: template,
-                            onStart: {
-                                viewModel.startTemplate(template, workoutViewModel: workoutViewModel)
-                                onStartTemplate()
-                            },
-                            onEdit: {
-                                viewModel.editTemplate(template)
-                            }
-                        )
+                VStack(spacing: AppSpacing.lg) {
+                    // Workout Programs Section
+                    WorkoutProgramsSection(workoutViewModel: workoutViewModel, onStart: onStartTemplate)
+                        .padding(.horizontal, AppSpacing.lg)
+                        .padding(.top, AppSpacing.lg)
+                    
+                    // Calisthenics Skills Section
+                    CalisthenicsSkillsSection(workoutViewModel: workoutViewModel, onStart: onStartTemplate)
+                        .padding(.horizontal, AppSpacing.lg)
+                    
+                    // Regular Templates Section
+                    VStack(alignment: .leading, spacing: AppSpacing.md) {
+                        Text("Workout Templates")
+                            .font(AppTypography.heading2)
+                            .foregroundColor(AppColors.textPrimary)
+                            .padding(.horizontal, AppSpacing.lg)
+                        
+                        ForEach(viewModel.templates.filter { !$0.name.contains("Progression") }) { template in
+                            TemplateCard(
+                                template: template,
+                                onStart: {
+                                    viewModel.startTemplate(template, workoutViewModel: workoutViewModel)
+                                    onStartTemplate()
+                                },
+                                onEdit: {
+                                    viewModel.editTemplate(template)
+                                }
+                            )
+                            .padding(.horizontal, AppSpacing.lg)
+                        }
                     }
+                    .padding(.bottom, 100)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
-                .padding(.bottom, 100)
             }
         }
         .background(AppColors.background)
