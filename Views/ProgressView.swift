@@ -39,6 +39,7 @@ struct ProgressView: View {
             }
         }
         .background(AppColors.background)
+        .id(AppColors.themeID)
     }
 }
 
@@ -98,8 +99,9 @@ struct WorkoutStreakCard: View {
     var body: some View {
         VStack(spacing: 24) {
             HStack(spacing: 8) {
-                Text("🔥")
-                    .font(.system(size: 24))
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(AppColors.primary)
                 Text("Workout Streak")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(AppColors.foreground)
@@ -172,8 +174,9 @@ struct ExercisePRTrackerView: View {
         VStack(alignment: .leading, spacing: 20) {
             // Header with Exercise Picker
             HStack(spacing: 12) {
-                Text("🏆")
-                    .font(.system(size: 24))
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(AppColors.accent)
                 
                 Text("PR Tracker")
                     .font(.system(size: 18, weight: .semibold))
@@ -383,7 +386,9 @@ struct PRListView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 8) {
-                Text("🏆")
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(AppColors.accent)
                 Text("Personal Records")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(AppColors.foreground)

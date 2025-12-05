@@ -47,9 +47,6 @@ struct WorkoutProgramView: View {
             let alternatives = ExerciseDataManager.shared.getAlternatives(for: programExercise.name)
             let videoURL = ExerciseDataManager.shared.getVideoURL(for: programExercise.name)
             
-            // Parse reps to get target (use first number if range like "6-8")
-            let targetReps = parseReps(programExercise.reps)
-            
             return Exercise(
                 name: programExercise.name,
                 targetSets: programExercise.sets,
@@ -255,4 +252,6 @@ struct ProgramExerciseRow: View {
         )
     }
 }
+
+
 

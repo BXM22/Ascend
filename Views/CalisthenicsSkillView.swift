@@ -90,10 +90,6 @@ struct SkillHeader: View {
     var body: some View {
         VStack(spacing: AppSpacing.md) {
             HStack {
-                Image(systemName: skill.icon)
-                    .font(.system(size: 48))
-                    .foregroundStyle(LinearGradient.primaryGradient)
-                
                 VStack(alignment: .leading, spacing: AppSpacing.xs) {
                     Text(skill.name)
                         .font(AppTypography.heading1)

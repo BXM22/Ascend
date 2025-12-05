@@ -1,26 +1,31 @@
 import Foundation
 
 // MARK: - Workout Day
-struct WorkoutDay: Identifiable {
-    let id = UUID()
+struct WorkoutDay: Identifiable, Codable {
+    let id: UUID
     let dayNumber: Int
     let name: String
-    let description: String
-    let exercises: [ProgramExercise]
-    let estimatedDuration: Int
+    var description: String
+    var exercises: [ProgramExercise]
+    var estimatedDuration: Int
+    var templateId: UUID? // Reference to a WorkoutTemplate
+    var isRestDay: Bool
     
-    init(dayNumber: Int, name: String, description: String, exercises: [ProgramExercise], estimatedDuration: Int) {
+    init(dayNumber: Int, name: String, description: String, exercises: [ProgramExercise] = [], estimatedDuration: Int = 0, templateId: UUID? = nil, isRestDay: Bool = false) {
+        self.id = UUID()
         self.dayNumber = dayNumber
         self.name = name
         self.description = description
         self.exercises = exercises
         self.estimatedDuration = estimatedDuration
+        self.templateId = templateId
+        self.isRestDay = isRestDay
     }
 }
 
 // MARK: - Program Exercise
-struct ProgramExercise: Identifiable {
-    let id = UUID()
+struct ProgramExercise: Identifiable, Codable {
+    let id: UUID
     let name: String
     let sets: Int
     let reps: String // Can be "6-8", "3-5", "10-12", etc.
@@ -28,7 +33,8 @@ struct ProgramExercise: Identifiable {
     let exerciseType: ExerciseType
     let targetHoldDuration: Int?
     
-    init(name: String, sets: Int, reps: String, notes: String? = nil, exerciseType: ExerciseType = .weightReps, targetHoldDuration: Int? = nil) {
+    init(id: UUID = UUID(), name: String, sets: Int, reps: String, notes: String? = nil, exerciseType: ExerciseType = .weightReps, targetHoldDuration: Int? = nil) {
+        self.id = id
         self.name = name
         self.sets = sets
         self.reps = reps
@@ -39,27 +45,31 @@ struct ProgramExercise: Identifiable {
 }
 
 // MARK: - Workout Program
-struct WorkoutProgram: Identifiable {
-    let id = UUID()
-    let name: String
-    let description: String
-    let days: [WorkoutDay]
-    let frequency: String // e.g., "2-3 cycles per week"
-    let category: ProgramCategory
+struct WorkoutProgram: Identifiable, Codable {
+    let id: UUID
+    var name: String
+    var description: String
+    var days: [WorkoutDay]
+    var frequency: String // e.g., "2-3 cycles per week"
+    var category: ProgramCategory
+    var splitType: WorkoutSplitType?
     
-    enum ProgramCategory: String {
+    enum ProgramCategory: String, Codable {
         case calisthenics = "Calisthenics"
         case strength = "Strength"
         case hypertrophy = "Hypertrophy"
         case skill = "Skill Progression"
+        case split = "Split"
     }
     
-    init(name: String, description: String, days: [WorkoutDay], frequency: String, category: ProgramCategory) {
+    init(id: UUID = UUID(), name: String, description: String, days: [WorkoutDay], frequency: String, category: ProgramCategory, splitType: WorkoutSplitType? = nil) {
+        self.id = id
         self.name = name
         self.description = description
         self.days = days
         self.frequency = frequency
         self.category = category
+        self.splitType = splitType
     }
 }
 
@@ -146,4 +156,6 @@ class WorkoutProgramManager {
         return programs.filter { $0.category == category }
     }
 }
+
+
 

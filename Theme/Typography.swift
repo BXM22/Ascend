@@ -9,6 +9,7 @@ struct AppTypography {
     
     // Additional typography variants for flexibility
     static let heading3 = Font.system(size: 20, weight: .semibold)
+    static let heading4 = Font.system(size: 18, weight: .semibold)
     static let bodyBold = Font.system(size: 16, weight: .semibold)
     static let bodyMedium = Font.system(size: 16, weight: .medium)
     static let captionMedium = Font.system(size: 12, weight: .medium)

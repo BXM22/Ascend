@@ -84,19 +84,35 @@ class ExerciseDataManager {
     private init() {}
     
     func getAlternatives(for exerciseName: String) -> [String] {
-        // Check exact match first
+        var alternatives: [String] = []
+        
+        // Check exact match first in local database
         if let info = exerciseDatabase[exerciseName] {
-            return info.alternatives
+            alternatives.append(contentsOf: info.alternatives)
         }
         
         // Check if it's a skill progression exercise (e.g., "Planche - Tuck Planche")
         for (skillName, info) in exerciseDatabase {
             if exerciseName.contains(skillName) {
-                return info.alternatives
+                alternatives.append(contentsOf: info.alternatives)
             }
         }
         
-        return []
+        // If no alternatives found, check ExRx directory
+        if alternatives.isEmpty {
+            let exRxAlternatives = ExRxDirectoryManager.shared.getAlternatives(for: exerciseName)
+            alternatives.append(contentsOf: exRxAlternatives)
+        } else {
+            // Merge with ExRx alternatives, avoiding duplicates
+            let exRxAlternatives = ExRxDirectoryManager.shared.getAlternatives(for: exerciseName)
+            for alt in exRxAlternatives {
+                if !alternatives.contains(alt) {
+                    alternatives.append(alt)
+                }
+            }
+        }
+        
+        return alternatives
     }
     
     func getVideoURL(for exerciseName: String) -> String? {
@@ -123,7 +139,31 @@ class ExerciseDataManager {
     }
     
     func hasAlternatives(for exerciseName: String) -> Bool {
-        return !getAlternatives(for: exerciseName).isEmpty
+        // Check local database first
+        if let info = exerciseDatabase[exerciseName] {
+            return !info.alternatives.isEmpty
+        }
+        
+        // Check skill progression
+        for (skillName, info) in exerciseDatabase {
+            if exerciseName.contains(skillName) {
+                return !info.alternatives.isEmpty
+            }
+        }
+        
+        // Check ExRx directory
+        let exRxAlternatives = ExRxDirectoryManager.shared.getAlternatives(for: exerciseName)
+        return !exRxAlternatives.isEmpty
+    }
+    
+    // Get ExRx URL for an exercise
+    func getExRxURL(for exerciseName: String) -> String? {
+        return ExRxDirectoryManager.shared.getExRxURL(for: exerciseName)
+    }
+    
+    // Search ExRx directory
+    func searchExRxDirectory(query: String) -> [ExRxExercise] {
+        return ExRxDirectoryManager.shared.searchExercises(query: query)
     }
     
     func hasVideo(for exerciseName: String) -> Bool {

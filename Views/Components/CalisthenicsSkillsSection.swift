@@ -9,8 +9,9 @@ struct CalisthenicsSkillsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             HStack {
-                Text("💪")
-                    .font(.system(size: 32))
+                Image(systemName: "figure.strengthtraining.traditional")
+                    .font(.system(size: 24))
+                    .foregroundColor(AppColors.primary)
                 
                 VStack(alignment: .leading, spacing: AppSpacing.xs) {
                     Text("Calisthenics Skills")
@@ -57,7 +58,7 @@ struct CalisthenicsSkillsSection: View {
                             .foregroundColor(AppColors.primary)
                         }
                     }
-                    .onChange(of: workoutViewModel.currentWorkout) { newValue in
+                    .onChange(of: workoutViewModel.currentWorkout) { _, newValue in
                         if newValue != nil {
                             // Workout started, close sheet and navigate
                             showSkillDetail = false
@@ -78,10 +79,6 @@ struct CalisthenicsSkillCard: View {
         Button(action: onTap) {
             VStack(alignment: .leading, spacing: AppSpacing.sm) {
                 HStack {
-                    Image(systemName: skill.icon)
-                        .font(.system(size: 32))
-                        .foregroundStyle(LinearGradient.primaryGradient)
-                    
                     Spacer()
                     
                     Text(skill.category.rawValue)

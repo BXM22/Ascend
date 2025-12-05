@@ -15,6 +15,7 @@ class WorkoutViewModel: ObservableObject {
     
     var settingsManager: SettingsManager?
     var progressViewModel: ProgressViewModel?
+    var programViewModel: WorkoutProgramViewModel?
     
     private var timer: Timer?
     private var restTimer: Timer?
@@ -101,6 +102,15 @@ class WorkoutViewModel: ObservableObject {
         // Add workout date to progress tracking
         if let progressVM = progressViewModel {
             progressVM.addWorkoutDate()
+        }
+        
+        // Advance program day if workout was from a program
+        if let programVM = programViewModel,
+           let workout = currentWorkout,
+           let activeProgram = programVM.activeProgram,
+           let program = programVM.programs.first(where: { $0.id == activeProgram.programId }),
+           workout.name.contains(program.name) {
+            programVM.advanceToNextDay(for: program)
         }
         
         currentWorkout = nil

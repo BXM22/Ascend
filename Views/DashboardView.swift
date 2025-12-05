@@ -3,6 +3,9 @@ import SwiftUI
 struct DashboardView: View {
     @ObservedObject var progressViewModel: ProgressViewModel
     @ObservedObject var workoutViewModel: WorkoutViewModel
+    @ObservedObject var templatesViewModel: TemplatesViewModel
+    @ObservedObject var programViewModel: WorkoutProgramViewModel
+    let onStartWorkout: () -> Void
     
     var body: some View {
         ScrollView {
@@ -11,6 +14,31 @@ struct DashboardView: View {
                 DashboardHeader()
                 
                 VStack(spacing: AppSpacing.lg) {
+                    // Program Day Tracker
+                    if programViewModel.activeProgram != nil {
+                        ProgramDayTracker(
+                            programViewModel: programViewModel,
+                            templatesViewModel: templatesViewModel,
+                            workoutViewModel: workoutViewModel,
+                            onStartWorkout: onStartWorkout
+                        )
+                        .padding(.horizontal, AppSpacing.lg)
+                        .padding(.top, AppSpacing.lg)
+                        
+                        // Workout Calendar
+                        WorkoutCalendarView(programViewModel: programViewModel)
+                            .padding(.horizontal, AppSpacing.lg)
+                    }
+                    
+                    // Quick Start Templates
+                    QuickStartTemplatesSection(
+                        templatesViewModel: templatesViewModel,
+                        workoutViewModel: workoutViewModel,
+                        onStartWorkout: onStartWorkout
+                    )
+                    .padding(.horizontal, AppSpacing.lg)
+                    .padding(.top, programViewModel.activeProgram != nil ? 0 : AppSpacing.lg)
+                    
                     // Quick Stats Grid
                     QuickStatsGrid(
                         currentStreak: progressViewModel.currentStreak,
@@ -18,7 +46,6 @@ struct DashboardView: View {
                         workoutCount: progressViewModel.workoutCount
                     )
                     .padding(.horizontal, AppSpacing.lg)
-                    .padding(.top, AppSpacing.lg)
                     
                     // Workout Streak Card
                     WorkoutStreakCard(
@@ -43,6 +70,7 @@ struct DashboardView: View {
             }
         }
         .background(AppColors.background)
+        .id(AppColors.themeID)
     }
 }
 
@@ -60,13 +88,6 @@ struct DashboardHeader: View {
             }
             
             Spacer()
-            
-            // App Logo
-            Image("Logo")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 48, height: 48)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .padding(.horizontal, AppSpacing.lg)
         .padding(.vertical, AppSpacing.md)
@@ -172,8 +193,9 @@ struct RecentActivityCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             HStack {
-                Text("🏆")
-                    .font(.system(size: 24))
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(AppColors.accent)
                 Text("Recent PRs")
                     .font(AppTypography.heading3)
                     .foregroundColor(AppColors.textPrimary)
@@ -254,8 +276,9 @@ struct TopExercisesCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             HStack {
-                Text("💪")
-                    .font(.system(size: 24))
+                Image(systemName: "dumbbell.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(AppColors.primary)
                 Text("Top Exercises")
                     .font(AppTypography.heading3)
                     .foregroundColor(AppColors.textPrimary)
@@ -341,8 +364,9 @@ struct WeeklySummaryCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: AppSpacing.md) {
             HStack {
-                Text("📊")
-                    .font(.system(size: 24))
+                Image(systemName: "chart.bar.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(AppColors.accent)
                 Text("This Week")
                     .font(AppTypography.heading3)
                     .foregroundColor(AppColors.textPrimary)
@@ -394,10 +418,164 @@ struct WeeklySummaryCard: View {
     }
 }
 
+struct QuickStartTemplatesSection: View {
+    @ObservedObject var templatesViewModel: TemplatesViewModel
+    @ObservedObject var workoutViewModel: WorkoutViewModel
+    let onStartWorkout: () -> Void
+    
+    // Get featured templates (first 4 templates + first workout program)
+    var featuredTemplates: [QuickStartItem] {
+        var items: [QuickStartItem] = []
+        
+        // Add regular templates (limit to 3)
+        let regularTemplates = templatesViewModel.templates
+            .filter { !$0.name.contains("Progression") }
+            .prefix(3)
+        
+        for template in regularTemplates {
+            items.append(.template(template))
+        }
+        
+        // Add first workout program if available
+        if let program = WorkoutProgramManager.shared.programs.first {
+            items.append(.program(program))
+        }
+        
+        return items
+    }
+    
+    enum QuickStartItem {
+        case template(WorkoutTemplate)
+        case program(WorkoutProgram)
+        
+        var name: String {
+            switch self {
+            case .template(let template):
+                return template.name
+            case .program(let program):
+                return program.name
+            }
+        }
+        
+        var icon: String {
+            switch self {
+            case .template:
+                return "dumbbell.fill"
+            case .program:
+                return "calendar"
+            }
+        }
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.md) {
+            HStack {
+                Image(systemName: "bolt.fill")
+                    .font(.system(size: 20))
+                    .foregroundColor(AppColors.primary)
+                Text("Quick Start")
+                    .font(AppTypography.heading3)
+                    .foregroundColor(AppColors.textPrimary)
+                Spacer()
+            }
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: AppSpacing.md) {
+                    ForEach(Array(featuredTemplates.enumerated()), id: \.offset) { index, item in
+                        QuickStartButton(
+                            item: item,
+                            onTap: {
+                                startWorkout(for: item)
+                            }
+                        )
+                    }
+                }
+                .padding(.horizontal, AppSpacing.lg)
+            }
+        }
+        .padding(AppSpacing.md)
+        .background(AppColors.card)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+    }
+    
+    private func startWorkout(for item: QuickStartItem) {
+        switch item {
+        case .template(let template):
+            templatesViewModel.startTemplate(template, workoutViewModel: workoutViewModel)
+            onStartWorkout()
+            
+        case .program(let program):
+            // Start with Day 1 of the program
+            if let day1 = program.days.first {
+                startProgramDay(day1, programName: program.name)
+                onStartWorkout()
+            }
+        }
+    }
+    
+    private func startProgramDay(_ day: WorkoutDay, programName: String) {
+        let exercises = day.exercises.map { programExercise in
+            let alternatives = ExerciseDataManager.shared.getAlternatives(for: programExercise.name)
+            let videoURL = ExerciseDataManager.shared.getVideoURL(for: programExercise.name)
+            
+            return Exercise(
+                name: programExercise.name,
+                targetSets: programExercise.sets,
+                exerciseType: programExercise.exerciseType,
+                holdDuration: programExercise.targetHoldDuration,
+                alternatives: alternatives,
+                videoURL: videoURL
+            )
+        }
+        
+        workoutViewModel.currentWorkout = Workout(name: "\(programName) - \(day.name)", exercises: exercises)
+        workoutViewModel.currentExerciseIndex = 0
+        workoutViewModel.startTimer()
+    }
+}
+
+struct QuickStartButton: View {
+    let item: QuickStartTemplatesSection.QuickStartItem
+    let onTap: () -> Void
+    
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: AppSpacing.sm) {
+                Image(systemName: item.icon)
+                    .font(.system(size: 24))
+                    .foregroundStyle(LinearGradient.primaryGradient)
+                    .frame(width: 50, height: 50)
+                    .background(AppColors.primary.opacity(0.2))
+                    .clipShape(Circle())
+                
+                Text(item.name)
+                    .font(AppTypography.bodyMedium)
+                    .foregroundColor(AppColors.textPrimary)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+                    .frame(width: 100)
+            }
+            .padding(AppSpacing.md)
+            .frame(width: 120, height: 140)
+            .background(AppColors.secondary)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(AppColors.primary.opacity(0.3), lineWidth: 1)
+            )
+        }
+        .buttonStyle(ScaleButtonStyle())
+    }
+}
+
 #Preview {
     DashboardView(
         progressViewModel: ProgressViewModel(),
-        workoutViewModel: WorkoutViewModel()
+        workoutViewModel: WorkoutViewModel(),
+        templatesViewModel: TemplatesViewModel(),
+        programViewModel: WorkoutProgramViewModel(),
+        onStartWorkout: {}
     )
 }
 

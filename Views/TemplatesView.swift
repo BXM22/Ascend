@@ -10,21 +10,36 @@ import SwiftUI
 struct TemplatesView: View {
     @ObservedObject var viewModel: TemplatesViewModel
     @ObservedObject var workoutViewModel: WorkoutViewModel
+    @ObservedObject var programViewModel: WorkoutProgramViewModel
     let onStartTemplate: () -> Void
+    @State private var showGenerateSheet = false
     
     var body: some View {
         ScrollView {
             VStack(spacing: 0) {
                 // Header
-                TemplatesHeader(onCreate: {
-                    viewModel.createTemplate()
-                })
+                TemplatesHeader(
+                    onCreate: {
+                        viewModel.createTemplate()
+                    },
+                    onGenerate: {
+                        showGenerateSheet = true
+                    },
+                    onSettings: {
+                        viewModel.showGenerationSettings = true
+                    }
+                )
                 
                 VStack(spacing: AppSpacing.lg) {
                     // Workout Programs Section
-                    WorkoutProgramsSection(workoutViewModel: workoutViewModel, onStart: onStartTemplate)
-                        .padding(.horizontal, AppSpacing.lg)
-                        .padding(.top, AppSpacing.lg)
+                    WorkoutSplitsSection(
+                        programViewModel: programViewModel,
+                        templatesViewModel: viewModel,
+                        workoutViewModel: workoutViewModel,
+                        onStartWorkout: onStartTemplate
+                    )
+                    .padding(.horizontal, AppSpacing.lg)
+                    .padding(.top, AppSpacing.lg)
                     
                     // Calisthenics Skills Section
                     CalisthenicsSkillsSection(workoutViewModel: workoutViewModel, onStart: onStartTemplate)
@@ -56,11 +71,50 @@ struct TemplatesView: View {
             }
         }
         .background(AppColors.background)
+        .id(AppColors.themeID)
+        .sheet(isPresented: $viewModel.showEditTemplate) {
+            if let template = viewModel.editingTemplate {
+                TemplateEditView(
+                    template: template,
+                    onSave: { template in
+                        viewModel.saveTemplate(template)
+                    },
+                    onCancel: {
+                        viewModel.showEditTemplate = false
+                        viewModel.editingTemplate = nil
+                    },
+                    onDelete: {
+                        viewModel.deleteTemplate(template)
+                        viewModel.showEditTemplate = false
+                        viewModel.editingTemplate = nil
+                    }
+                )
+            }
+        }
+        .sheet(isPresented: $viewModel.showCreateTemplate) {
+            TemplateEditView(
+                template: nil,
+                onSave: { template in
+                    viewModel.saveTemplate(template)
+                },
+                onCancel: {
+                    viewModel.showCreateTemplate = false
+                }
+            )
+        }
+        .sheet(isPresented: $viewModel.showGenerationSettings) {
+            WorkoutGenerationSettingsView(settings: $viewModel.generationSettings)
+        }
+        .sheet(isPresented: $showGenerateSheet) {
+            WorkoutGenerationView(viewModel: viewModel, onStart: onStartTemplate)
+        }
     }
 }
 
 struct TemplatesHeader: View {
     let onCreate: () -> Void
+    let onGenerate: () -> Void
+    let onSettings: () -> Void
     
     var body: some View {
         HStack {
@@ -70,13 +124,33 @@ struct TemplatesHeader: View {
             
             Spacer()
             
-            Button(action: onCreate) {
-                Image(systemName: "plus")
-                    .font(.system(size: 20))
-                    .foregroundColor(AppColors.primary)
-                    .frame(width: 40, height: 40)
-                    .background(AppColors.secondary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            HStack(spacing: 12) {
+                Button(action: onSettings) {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 18))
+                        .foregroundColor(AppColors.primary)
+                        .frame(width: 40, height: 40)
+                        .background(AppColors.secondary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                
+                Button(action: onGenerate) {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 18))
+                        .foregroundColor(AppColors.primary)
+                        .frame(width: 40, height: 40)
+                        .background(AppColors.secondary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                
+                Button(action: onCreate) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 20))
+                        .foregroundColor(AppColors.primary)
+                        .frame(width: 40, height: 40)
+                        .background(AppColors.secondary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
             }
         }
         .padding(.horizontal, 20)
@@ -488,6 +562,7 @@ struct TemplateEditView: View {
     TemplatesView(
         viewModel: TemplatesViewModel(),
         workoutViewModel: WorkoutViewModel(),
+        programViewModel: WorkoutProgramViewModel(),
         onStartTemplate: {}
     )
 }

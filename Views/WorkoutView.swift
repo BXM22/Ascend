@@ -114,6 +114,7 @@ struct WorkoutView: View {
             }
         }
         .background(AppColors.background)
+        .id(AppColors.themeID)
         .sheet(isPresented: $viewModel.showAddExerciseSheet) {
             AddExerciseView(
                 onAdd: { name, sets, type, holdDuration in
@@ -442,7 +443,8 @@ struct PRBadge: View {
     
     var body: some View {
         HStack(spacing: 8) {
-            Text("🏆")
+            Image(systemName: "trophy.fill")
+                .font(.system(size: 16))
             Text("PR! \(message)")
                 .font(.system(size: 15, weight: .bold))
                 .textCase(.uppercase)

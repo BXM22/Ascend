@@ -3,14 +3,36 @@ import SwiftUI
 import Combine
 
 class TemplatesViewModel: ObservableObject {
-    @Published var templates: [WorkoutTemplate] = []
+    @Published var templates: [WorkoutTemplate] = [] {
+        didSet {
+            saveTemplates()
+        }
+    }
+    @Published var generationSettings = WorkoutGenerationSettings()
+    @Published var showGenerationSettings = false
+    
+    private let templatesKey = "savedWorkoutTemplates"
     
     init() {
-        loadSampleTemplates()
+        loadTemplates()
+    }
+    
+    func loadTemplates() {
+        // Load saved templates from UserDefaults
+        if let data = UserDefaults.standard.data(forKey: templatesKey),
+           let decoded = try? JSONDecoder().decode([WorkoutTemplate].self, from: data) {
+            templates = decoded
+        } else {
+            // Load sample templates if no saved data
+            loadSampleTemplates()
+        }
+        
+        // Always add calisthenics skill progression templates (these are dynamic)
+        loadCalisthenicsTemplates()
     }
     
     func loadSampleTemplates() {
-        templates = [
+        let sampleTemplates = [
             WorkoutTemplate(
                 name: "Push Day",
                 exercises: ["Bench Press", "Overhead Press", "Incline Dumbbell", "Tricep Dips", "Lateral Raises", "Chest Flyes"],
@@ -28,8 +50,10 @@ class TemplatesViewModel: ObservableObject {
             )
         ]
         
-        // Add calisthenics skill progression templates
-        loadCalisthenicsTemplates()
+        // Only add sample templates if we have no saved templates
+        if templates.isEmpty {
+            templates = sampleTemplates
+        }
     }
     
     func loadCalisthenicsTemplates() {
@@ -43,7 +67,19 @@ class TemplatesViewModel: ObservableObject {
             )
         }
         
-        templates.append(contentsOf: calisthenicsTemplates)
+        // Only add calisthenics templates if they don't already exist
+        let existingProgressionNames = Set(templates.filter { $0.name.contains("Progression") }.map { $0.name })
+        let newCalisthenicsTemplates = calisthenicsTemplates.filter { !existingProgressionNames.contains($0.name) }
+        templates.append(contentsOf: newCalisthenicsTemplates)
+    }
+    
+    private func saveTemplates() {
+        // Filter out calisthenics progression templates before saving (they're dynamic)
+        let templatesToSave = templates.filter { !$0.name.contains("Progression") }
+        
+        if let encoded = try? JSONEncoder().encode(templatesToSave) {
+            UserDefaults.standard.set(encoded, forKey: templatesKey)
+        }
     }
     
     @Published var showEditTemplate: Bool = false
@@ -73,6 +109,7 @@ class TemplatesViewModel: ObservableObject {
             // Add new template
             templates.append(template)
         }
+        // Templates are automatically saved via didSet
         showEditTemplate = false
         showCreateTemplate = false
         editingTemplate = nil
@@ -80,6 +117,33 @@ class TemplatesViewModel: ObservableObject {
     
     func deleteTemplate(_ template: WorkoutTemplate) {
         templates.removeAll { $0.id == template.id }
+    }
+    
+    // Generate workout using WorkoutGenerator
+    func generateWorkout(name: String? = nil) -> WorkoutTemplate {
+        return WorkoutGenerator.shared.generateWorkout(settings: generationSettings, name: name)
+    }
+    
+    // Generate specific workout types
+    func generatePushWorkout() -> WorkoutTemplate {
+        return WorkoutGenerator.shared.generatePushWorkout(settings: generationSettings)
+    }
+    
+    func generatePullWorkout() -> WorkoutTemplate {
+        return WorkoutGenerator.shared.generatePullWorkout(settings: generationSettings)
+    }
+    
+    func generateLegWorkout() -> WorkoutTemplate {
+        return WorkoutGenerator.shared.generateLegWorkout(settings: generationSettings)
+    }
+    
+    func generateFullBodyWorkout() -> WorkoutTemplate {
+        return WorkoutGenerator.shared.generateFullBodyWorkout(settings: generationSettings)
+    }
+    
+    // Generate multiple variations
+    func generateWorkoutVariations(count: Int) -> [WorkoutTemplate] {
+        return WorkoutGenerator.shared.generateWorkoutVariations(settings: generationSettings, count: count)
     }
 }
 

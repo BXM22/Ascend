@@ -22,7 +22,7 @@ struct ExerciseSet: Identifiable, Equatable {
 }
 
 // MARK: - Exercise Type
-enum ExerciseType {
+enum ExerciseType: Codable {
     case weightReps
     case hold
 }
@@ -61,7 +61,7 @@ struct Exercise: Identifiable, Equatable {
 }
 
 // MARK: - Workout Template
-struct WorkoutTemplate: Identifiable {
+struct WorkoutTemplate: Identifiable, Codable {
     let id: UUID
     let name: String
     let exercises: [String]

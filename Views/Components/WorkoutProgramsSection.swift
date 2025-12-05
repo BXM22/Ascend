@@ -28,7 +28,7 @@ struct WorkoutProgramsSection: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: AppSpacing.md) {
                     ForEach(WorkoutProgramManager.shared.programs) { program in
-                        WorkoutProgramCard(
+                        SimpleWorkoutProgramCard(
                             program: program,
                             onTap: {
                                 selectedProgram = program
@@ -55,7 +55,7 @@ struct WorkoutProgramsSection: View {
                             .foregroundColor(AppColors.primary)
                         }
                     }
-                    .onChange(of: workoutViewModel.currentWorkout) { newValue in
+                    .onChange(of: workoutViewModel.currentWorkout) { _, newValue in
                         if newValue != nil {
                             showProgramDetail = false
                             onStart()
@@ -67,7 +67,7 @@ struct WorkoutProgramsSection: View {
     }
 }
 
-struct WorkoutProgramCard: View {
+struct SimpleWorkoutProgramCard: View {
     let program: WorkoutProgram
     let onTap: () -> Void
     
@@ -129,4 +129,6 @@ struct WorkoutProgramCard: View {
     .padding()
     .background(AppColors.background)
 }
+
+
 

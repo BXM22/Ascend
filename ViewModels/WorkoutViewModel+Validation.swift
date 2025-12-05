@@ -68,7 +68,7 @@ extension ProgressViewModel {
 extension ExerciseDataManager {
     /// Validates YouTube URL format
     func isValidYouTubeURL(_ urlString: String) -> Bool {
-        guard let url = URL(string: urlString) else { return false }
+        guard URL(string: urlString) != nil else { return false }
         return urlString.contains("youtube.com") || urlString.contains("youtu.be")
     }
     

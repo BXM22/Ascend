@@ -11,6 +11,7 @@ struct ContentView: View {
     @StateObject private var workoutViewModel = WorkoutViewModel()
     @StateObject private var progressViewModel = ProgressViewModel()
     @StateObject private var templatesViewModel = TemplatesViewModel()
+    @StateObject private var programViewModel = WorkoutProgramViewModel()
     @StateObject private var themeManager = ThemeManager()
     @StateObject private var settingsManager = SettingsManager()
     @State private var selectedTab: Tab = .dashboard
@@ -28,6 +29,7 @@ struct ContentView: View {
         ZStack {
             AppColors.background
                 .ignoresSafeArea()
+                .id(AppColors.themeID)
             
             VStack(spacing: 0) {
                 // Main Content
@@ -36,20 +38,30 @@ struct ContentView: View {
                     case .dashboard:
                         DashboardView(
                             progressViewModel: progressViewModel,
-                            workoutViewModel: workoutViewModel
+                            workoutViewModel: workoutViewModel,
+                            templatesViewModel: templatesViewModel,
+                            programViewModel: programViewModel,
+                            onStartWorkout: {
+                                selectedTab = .workout
+                            }
                         )
+                        .id(AppColors.themeID)
                     case .workout:
                         WorkoutView(viewModel: workoutViewModel)
+                            .id(AppColors.themeID)
                     case .progress:
                         ProgressView(viewModel: progressViewModel)
+                            .id(AppColors.themeID)
                     case .templates:
                         TemplatesView(
                             viewModel: templatesViewModel,
                             workoutViewModel: workoutViewModel,
+                            programViewModel: programViewModel,
                             onStartTemplate: {
                                 selectedTab = .workout
                             }
                         )
+                        .id(AppColors.themeID)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -57,10 +69,18 @@ struct ContentView: View {
                     // Connect ViewModels
                     workoutViewModel.progressViewModel = progressViewModel
                     workoutViewModel.settingsManager = settingsManager
+                    workoutViewModel.programViewModel = programViewModel
                 }
+                .environmentObject(settingsManager)
+                .environmentObject(ColorThemeProvider.shared)
                 
                 // Bottom Navigation
-                BottomNavigationBar(selectedTab: $selectedTab, themeManager: themeManager)
+                BottomNavigationBar(
+                    selectedTab: $selectedTab,
+                    themeManager: themeManager,
+                    settingsManager: settingsManager
+                )
+                .id(AppColors.themeID)
             }
         }
         .preferredColorScheme(themeManager.colorScheme)
@@ -100,13 +120,17 @@ struct ContentView: View {
 struct BottomNavigationBar: View {
     @Binding var selectedTab: ContentView.Tab
     @ObservedObject var themeManager: ThemeManager
+    @ObservedObject var settingsManager: SettingsManager
     @State private var showThemePicker = false
     
     var body: some View {
         VStack(spacing: 0) {
             // Theme Picker (when shown)
             if showThemePicker {
-                ThemePickerView(themeManager: themeManager)
+                ThemePickerView(
+                    themeManager: themeManager,
+                    settingsManager: settingsManager
+                )
                     .padding(.horizontal, 20)
                     .padding(.vertical, 12)
                     .background(
@@ -183,12 +207,149 @@ struct BottomNavigationBar: View {
 
 struct ThemePickerView: View {
     @ObservedObject var themeManager: ThemeManager
+    @ObservedObject var settingsManager: SettingsManager
+    @State private var showColorImport = false
+    @State private var colorURLText = ""
+    @State private var importError: String?
+    @State private var importSuccess = false
     
     var body: some View {
-        HStack(spacing: 12) {
-            ForEach(ThemeManager.ThemeMode.allCases, id: \.self) { mode in
-                ThemeButton(mode: mode, themeManager: themeManager)
+        VStack(spacing: AppSpacing.md) {
+            // Theme Mode Picker
+            HStack(spacing: 12) {
+                ForEach(ThemeManager.ThemeMode.allCases, id: \.self) { mode in
+                    ThemeButton(mode: mode, themeManager: themeManager)
+                }
             }
+            
+            Divider()
+                .background(AppColors.border)
+            
+            // Color Theme Import Section
+            VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                HStack {
+                    Text("Custom Color Theme")
+                        .font(AppTypography.bodyMedium)
+                        .foregroundColor(AppColors.textPrimary)
+                    
+                    Spacer()
+                    
+                    if settingsManager.customTheme != nil {
+                        Button(action: {
+                            settingsManager.resetToDefaultTheme()
+                            importSuccess = false
+                        }) {
+                            Text("Reset")
+                                .font(AppTypography.captionMedium)
+                                .foregroundColor(AppColors.destructive)
+                        }
+                    }
+                }
+                
+                if !showColorImport {
+                    Button(action: {
+                        withAnimation {
+                            showColorImport = true
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "link")
+                                .font(AppTypography.body)
+                            Text("Import from Coolors.co")
+                                .font(AppTypography.bodyMedium)
+                        }
+                        .foregroundColor(AppColors.accentForeground)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, AppSpacing.sm)
+                        .background(AppColors.accent)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: AppSpacing.sm) {
+                        TextField("Paste Coolors.co URL", text: $colorURLText)
+                            .font(AppTypography.body)
+                            .foregroundColor(AppColors.textPrimary)
+                            .padding(AppSpacing.sm)
+                            .background(AppColors.input)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .autocapitalization(.none)
+                            .autocorrectionDisabled()
+                        
+                        if let error = importError {
+                            Text(error)
+                                .font(AppTypography.caption)
+                                .foregroundColor(AppColors.destructive)
+                        }
+                        
+                        if importSuccess {
+                            Text("Theme imported successfully!")
+                                .font(AppTypography.caption)
+                                .foregroundColor(AppColors.success)
+                        }
+                        
+                        HStack(spacing: AppSpacing.sm) {
+                            Button(action: {
+                                importTheme()
+                            }) {
+                                Text("Import")
+                                    .font(AppTypography.bodyMedium)
+                                    .foregroundColor(AppColors.accentForeground)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, AppSpacing.sm)
+                                    .background(AppColors.accent)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                            
+                            Button(action: {
+                                withAnimation {
+                                    showColorImport = false
+                                    colorURLText = ""
+                                    importError = nil
+                                    importSuccess = false
+                                }
+                            }) {
+                                Text("Cancel")
+                                    .font(AppTypography.bodyMedium)
+                                    .foregroundColor(AppColors.textSecondary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, AppSpacing.sm)
+                                    .background(AppColors.secondary)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .colorThemeDidChange)) { _ in
+            // Refresh view when theme changes
+        }
+    }
+    
+    private func importTheme() {
+        importError = nil
+        importSuccess = false
+        
+        guard !colorURLText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            importError = "Please enter a URL"
+            return
+        }
+        
+        let result = settingsManager.importTheme(from: colorURLText)
+        
+        switch result {
+        case .success:
+            importSuccess = true
+            // Clear text after successful import
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                withAnimation {
+                    showColorImport = false
+                    colorURLText = ""
+                    importSuccess = false
+                }
+            }
+        case .failure(let error):
+            importError = error.localizedDescription
         }
     }
 }
